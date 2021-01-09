@@ -121,30 +121,6 @@ class ConvLSTMNet(nn.Module):
         hidden_seq = torch.cat(hidden_seq, dim=1)
         return fms_seq, hidden_seq, seg, depth, fms
 
-    '''
-    def predict_next(self, fms_seq, pred_fms, hidden):
-        # predict items-of-interest on predicted feature maps
-        output_dict = dict()
-        output_dict['seg_pred'], rx, output_dict['depth_pred'] = self.fm_infer(pred_fms)
-        if self.args.use_detection:
-            output_dict['loc_pred'], output_dict['cls_pred'], output_dict['colls_with_prob'], output_dict["residual_pred"], output_dict["conf_pred"], output_dict["dim_pred"], output_dict["center_pred"] = self.detector(pred_fms)
-
-        nx_feature_enc = fms_seq[1:] + [pred_fms]
-        hidden = torch.cat([hidden[:, self.args.classes:, :, :], rx], dim=1)
-
-        if self.args.use_collision:
-            output_dict['coll_prob'] = self.coll_layer(rx.detach())
-            # output_dict['coll_other_prob'] = self.coll_other_layer(rx.detach())
-            # output_dict['coll_vehicles_prob'] = self.coll_vehicle_layer(rx.detach())
-        if self.args.use_offroad:
-            output_dict['offroad_prob'] = self.offroad_layer(rx.detach())
-        if self.args.use_offlane:
-            output_dict['offlane_prob'] = self.offlane_layer(rx.detach())
-        if self.args.use_speed:
-            output_dict['speed'] = self.speed_layer(hidden.detach())
-
-        return output_dict, nx_feature_enc, hidden
-    '''
 
     def forward_next_step(self, fms_seq, action, with_encode=False, hidden=None, cell=None, training=True, action_var=None):
         # given the predicted feature maps for the next frame, do:
@@ -156,7 +132,6 @@ class ConvLSTMNet(nn.Module):
         fms_seq[-1] = tile(fms_seq[-1], action)
         pred_fms = self.feature_map_predictor(fms_seq)
 
-        # output_dict, nx_feature_enc, hidden = self.predict_next(fms_seq, pred_fms, hidden)
         output_dict['seg_pred'], rx, output_dict['depth_pred'] = self.fm_infer(pred_fms)
         if self.args.use_detection:
             output_dict['loc_pred'], output_dict['cls_pred'], output_dict['colls_with_prob'], output_dict["residual_pred"], output_dict["conf_pred"], output_dict["dim_pred"], output_dict["center_pred"] = self.detector(pred_fms)
@@ -260,7 +235,7 @@ def init_models(args):
     if not args.eval:
         train_net.train()
 
-    train_net, epoch = load_model(args, args.save_path, train_net, resume=args.resume)
+    train_net, epoch, step = load_model(args, args.save_path, train_net, resume=args.resume)
     
     '''
     if not args.resume and not args.eval:
@@ -292,15 +267,14 @@ def init_models(args):
     )
 
     if args.resume:
-        try:
-            if args.env == 'torcs':
-                num_imgs_start = max(int(open(os.path.join(args.save_path, 'log_train_torcs.txt')).readlines()[-1].split(' ')[1]) - 1000, 0)
-            elif 'carla' in args.env:
-                num_imgs_start = int(open(os.path.join(args.save_path, 'log_train_{}.txt'.format(args.env))).readlines()[-1].split(' ')[3])
-            else:
-                num_imgs_start = 0 # TODO: to be fixed
-        except:
-            num_imgs_start = 0
+        if args.env == 'torcs':
+            num_imgs_start = max(int(open(os.path.join(args.save_path, 'log_train_torcs.txt')).readlines()[-1].split(' ')[1]) - 1000, 0)
+        elif 'carla' in args.env:
+            reward_log = os.path.join(args.save_path, 'reward_train_{}.txt'.format(args.env))
+            try:
+                num_imgs_start = int(open(reward_log).readlines()[-1].split(' ')[3])
+            except:
+                num_imgs_start = 0
     else:
         num_imgs_start = 0
 

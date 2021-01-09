@@ -2,8 +2,7 @@ from __future__ import division, print_function
 from manager import BufferManager
 from actionsampler import ActionSampleManager
 from utils import generate_guide_grid, color_text, log_seg, get_accuracy, visualize, visualize_guide_action, norm_image
-from models import init_models
-from retinanet.loss import FocalLoss
+from models import init_models, FocalLoss
 import os
 import numpy as np
 import torch
@@ -206,58 +205,13 @@ class Trainer():
                 for frame_ind in bboxes_ind[batch_ind][0]:
                     frame_idx.append(batch_ind * (self.pstep + 1) + frame_ind)
 
-            if not len(frame_idx) > threshold:
+            if len(frame_idx) < threshold:
                 print(color_text('No enough positive samples to train detector ...', 'green'))
+                instance_loss = 0
             else:
-                # focalloss = FocalLoss()
-
-                '''
-                target_cls = target['cls_batch']
-                target_loc = target['bboxes_batch']
-                target_coll_with = target['coll_with_batch']
-                pred_cls = output['cls_pred']
-                pred_loc = output['loc_pred']
-                pred_coll_with = output['colls_with_prob']
-                '''
-
-                # anchor_num = self.bmanager.spc_buffer.anchor_num
-
-                '''
-                for bind in nonempty_batches:
-                    max_values = [round(pred_cls[bind, i].sigmoid().max().cpu().item(), 2) for i in range(pred_cls.size(1))]
-                    print("{}: {}".format(bind, max_values))
-                for bind in empty_batches:
-                    max_values = [round(pred_cls[bind, i].sigmoid().max().cpu().item(), 2) for i in range(pred_cls.size(1))]
-                    print("{}: {}".format(bind, max_values))
-                '''
-
-                # Strategy #2: put frames with at least one vehicle instance into training
-                '''
-                pred_loc = pred_loc.view(-1, anchor_num, 4)[frame_idx]
-                target_loc = target_loc[:, :, :, :4].view(-1, anchor_num, 4)[frame_idx]
-                pred_cls = pred_cls.view(-1, anchor_num, 1)[frame_idx]
-                target_cls = target_cls.view(-1, anchor_num)[frame_idx]
-                pred_coll_with = pred_coll_with.view(-1, anchor_num, 2)[frame_idx]
-                target_coll_with = target_coll_with.view(-1, anchor_num)[frame_idx]
-                '''
-
-                # detectloss = FocalLoss()
                 instance_loss = ins_loss(step, target, output, self.detect_loss_func, self.coll_with_loss_func, self.logger, use_coll_with=self.args.use_colls_with)
-
-                '''
-                bbox_ls = detect_loss(pred_loc, target_loc, pred_cls, target_cls)
-                loss += bbox_ls  
-                self.logger.write(step, "detect_loss", bbox_ls.item())
-
-                if args.use_colls_with:
-                    pred_colls_with = output['colls_with_prob']
-                    pred_colls_with = torch.cat([pred_colls_with[idx, bboxes_ind[idx][0], :, :] for idx in nonempty_batches], axis=0).view(-1, anchor_num)
-                    target_colls_with = target['colls_with_batch']
-                    target_colls_with = torch.cat([target_colls_with[idx, bboxes_ind[idx][0], :, :] for idx in nonempty_batches], axis=0).view(-1, anchor_num)
-                    colls_with_loss = train_colls_with(target_colls_with, pred_colls_with, get_accuracy, self.event_loss_func, "colls_with")
-                    loss += colls_with_loss
-                '''
-                loss += instance_loss
+            loss += instance_loss
+            print("detector loss: {}".format(instance_loss))
 
         # Loss Part #2: loss from future event happening prediction
         loss += event_losses(step, target, output, get_accuracy, self.event_loss_func, self.eventloss_weights, self.logger)

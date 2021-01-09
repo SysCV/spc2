@@ -8,24 +8,19 @@ import torch.nn.functional as F
 from utils.util import norm_image
 
 
-def CEMFit(x, y):
-    y = (y - np.mean(y, 0)) / np.std(y, 0)
-    y = np.clip(y, a_min=-5, a_max=5)
-    y = np.exp(y) / np.exp(y).sum()
-    mean = np.sum(x * y, 0)
-    var = np.sum(y * (x - mean)**2.0, 0)
-    covar = np.diag(var)
-    samples = torch.from_numpy(np.random.multivariate_normal(mean=mean, cov=covar, size=x.shape[0]))
-    return samples
-
-
 class ActionSampleManager:
     def __init__(self, args, guides):
         self.args = args
         self.prev_act = np.array([1.0, 0.0])
         self.guides = guides
         self.cand_num = 20
+        self.top_k = 5
         self.p = None
+        self.pstep = self.args.pred_step
+        self.time_discount = 0.5**torch.range(0, self.pstep-1)
+        self.time_discount = torch.clamp(self.time_discount, 1/8., 1.)
+        if torch.cuda.is_available():
+            self.time_discount = self.time_discount.cuda()
 
     def get_guide_action(self, action, lb=-1.0, ub=1.0):
         # get the index of target bin in guidance grid
@@ -70,8 +65,9 @@ class ActionSampleManager:
         else:
             pred_pos = torch.round(pred[:, :, 0]) if to_round else pred[:, :, 0] 
             pred_neg = torch.round(pred[:, :, 1]) if to_round else pred[:, :, 1]
-  
+
         cost = -pred_pos * speeds + pred_neg * self.args.speed_threshold
+        cost = cost * self.time_discount
         if key == "colls_with_prob":
             cost = cost.sum(axis=2)
         cost = (cost.view(-1, self.args.pred_step, 1) * weight).sum(-1).sum(-1)
@@ -94,11 +90,15 @@ class ActionSampleManager:
         use_offlane = (self.args.sample_with_offlane and self.args.use_offlane)
 
         if use_coll: cost += self.add_cost(output, 'coll_prob', speeds, weight)
-        if use_ins_coll: cost += self.add_cost(output, 'colls_with_prob', speeds, weight, with_cur=True)
+        # if use_ins_coll: cost += self.add_cost(output, 'colls_with_prob', speeds, weight, with_cur=True)
         if use_offroad: cost += self.add_cost(output, 'offroad_prob', speeds, weight)
         if use_offlane: cost += self.add_cost(output, 'offlane_prob', speeds, weight)
+        if use_ins_coll and self.args.SAS: 
+            ins_cos = self.add_cost(output, 'colls_with_prob', speeds, weight, with_cur=True)
+        else:
+            ins_cos = 0
 
-        return cost
+        return cost, ins_cos
 
     def _sample_action(self, p, net, imgs, guides, action_var=None, testing=False):
         imgs = copy.deepcopy(imgs)
@@ -112,26 +112,18 @@ class ActionSampleManager:
         
         # generate action candidates from guidances
         action = self.generate_action(p, self.cand_num, guides)
-            
-        if self.args.CEM:
-            action = torch.from_numpy(action).cuda().float()
-            with torch.no_grad():
-                for ii in range(5):
-                    action_np = action.view(action.shape[0], -1).cpu().numpy()
-                    action = action.cuda().float()
-                    cost = self.estimate_cost(net, imgs, action, action_var, None, None).data.cpu().numpy()
-                    cost = cost.reshape((action.shape[0], -1))
-                    action = CEMFit(action_np, cost * (-1)).view(action.shape[0], -1, self.args.num_total_act)
-            action = action.cpu().numpy()
-            this_action0 = copy.deepcopy(action)
-        else:
-            this_action0 = copy.deepcopy(action)
-            this_action = Variable(torch.from_numpy(action).cuda().float(), requires_grad=False)
-            with torch.no_grad():
-                cost = self.estimate_cost(net, imgs, this_action, action_var, None, None).data.cpu().numpy()
+
+        this_action0 = copy.deepcopy(action)
+        this_action = Variable(torch.from_numpy(action).cuda().float(), requires_grad=False)
+        with torch.no_grad():
+            cost, ins_cost = self.estimate_cost(net, imgs, this_action, action_var, None, None).data.cpu().numpy()
         
-        idx = np.argmin(cost)
-        res = this_action0[idx, :, :]
+        idx = np.argpartition(cost, self.top_k)
+        top_k_idx = idx[:self.top_k]
+        top_k_ins_cost = ins_cost[top_k_idx]
+        idx = np.argmin(top_k_ins_cost)
+        true_idx = top_k_idx[idx]
+        res = this_action0[true_idx, :, :]
         
         if not testing:
             return res[0]
