@@ -16,14 +16,13 @@ init_parser(parser)  # See `args.py` for default arguments
 args = parser.parse_args()
 args = post_processing(args)
 
-
 CARLA8_TIMEOUT = 100000
 CARLA9_TIMEOUT = 20.0
 
 def init_dirs(dir_list):
     for path in dir_list:
         if not os.path.isdir(path):
-            os.makedirs(path)
+            os.makedirs(path, exist_ok=True)
 
 
 def setup_dirs(args):
@@ -57,21 +56,15 @@ def create_carla9_env(args):
 
 
 def main():
-    if not args.resume:
-        if args.debug:
-            print("run spc in debug mode")
-            if os.path.isdir(args.save_path):
-                print(args.save_path)
-                shutil.rmtree(args.save_path)
-            setup_dirs(args)
-            shutil.copytree('scripts', os.path.join(args.save_path, 'scripts'))
-        elif os.path.isdir(args.save_path):
-            print("the save path has already existed!")
-            exit(0)
-        else:
-            setup_dirs(args)
-            shutil.copytree('scripts', os.path.join(args.save_path, 'scripts'))
+    if not args.resume and os.path.isdir(args.save_path):
+        print("the save path has already existed!")
+        exit(0)
+    
+    setup_dirs(args)
 
+    script_path = os.path.join(args.save_path, 'scripts')
+    if not os.path.isdir(script_path):
+        shutil.copytree('scripts', script_path)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
@@ -81,12 +74,13 @@ def main():
         env = create_carla9_env(args)
     elif 'carla8' in args.env:
         # select CARLA v0.8.x as the platform
-        from envs.CARLA.carla.client import make_carla_client
+        from envs.CARLA.carla_lib.carla.client import make_carla_client
         from envs.CARLA.carla_env import CarlaEnv
         client = make_carla_client('localhost', args.port, CARLA8_TIMEOUT)
         env = CarlaEnv(client, args)
     else:
         # select PyTorcs or GTAV as the platform
+        # which is basically inherited from SPC, not fully supported in IPC
         env = make_env(args)
 
     if args.eval:

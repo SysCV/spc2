@@ -1,10 +1,10 @@
 import cv2
 import os
-from .carla.transform import Transform
+from .carla_lib.carla.transform import Transform
 import numpy as np
-from .carla.settings import CarlaSettings
-from .carla.sensor import Camera
-from skimage import measure
+from .carla_lib.carla.settings import CarlaSettings
+from .carla_lib.carla.sensor import Camera
+# from skimage import measure
 import math
 from numpy.linalg import inv
 import numpy
@@ -125,6 +125,7 @@ def tighten_bbox(bboxes, bboxes3d, seg_bboxes, width, height):
                 visible_bbox_indices.append(ind)
     return tight_bboxes, visible_bbox_indices, visible_bboxes3d
 
+
 def extract_agent_bbox(agent):
     # extract the spatial information of an agent from CARLA measurements
     vehicle_transform = Transform(agent.vehicle.transform)
@@ -149,6 +150,7 @@ def extract_agent_bbox(agent):
     dimensions = [ext.x, ext.y, ext.z]
     
     return bbox, rotation, vehicle_location, dimensions
+
 
 def vertex_3d_to_2d(vertex, intrinsic, extrinsic):
     # transform a 3D vertex coordinate to 2d observation plane
@@ -252,25 +254,7 @@ def draw_3d_bbox(img, bbox3d, tnk=1, color=(0,0,255)):
         ind1, ind2 = pair[0], pair[1]
         p1, p2 = bbox3d[ind1], bbox3d[ind2]
         img = cv2.line(img, (p1[0], p1[1]), (p2[0], p2[1]), color, tnk)
-    '''
-    for i in range(4):
-        # import pdb; pdb.set_trace()
-        point_1 = bbox3d[2*i]
-        point_2 = bbox3d[2*i+1]
-        # pdb.set_trace()
-        cv2.line(img, (point_1[0], point_1[1]), (point_2[0], point_2[1]), color, tnk)
-        if i == 0 or i == 3:
-            front_mask.append((point_1[0], point_1[1]))
-            front_mask.append((point_2[0], point_2[1]))
-    
-    cv2.line(img, front_mask[0], front_mask[-1], color, tnk)
-    cv2.line(img, front_mask[1], front_mask[2], color, tnk)
 
-    for i in range(8):
-        point_1 = bbox3d[i]
-        point_2 = bbox3d[(i+2)%8]
-        cv2.line(img, (point_1[0], point_1[1]), (point_2[0], point_2[1]), color, tnk)
-    '''
     return img
 
 

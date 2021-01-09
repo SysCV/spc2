@@ -27,13 +27,12 @@ def set_train_params(parser):
     parser.add_argument('--output_path', type=str, default='demo', help="output path to save evaluation results")
     parser.add_argument('--port', type=int, default=6666)
     parser.add_argument('--num-train-steps', type=int, default=10)
-    parser.add_argument('--max-steps', type=int, default=4000000000)
+    parser.add_argument('--max-steps', type=int, default=1000000)
     parser.add_argument('--max-eval-step', type=int, default=1000)
     parser.add_argument('--debug', action='store_true', help='to use debug mode')
     parser.add_argument('--thr', type=int, default=2)
 
     # part2: supervision signals combat
-    parser.add_argument('--no-supervision', action='store_true') # deprecated in IPC
     parser.add_argument('--use-depth', action='store_true')
     parser.add_argument('--use-guidance', action='store_true')
     parser.add_argument('--use-collision', action='store_true')
@@ -57,7 +56,6 @@ def set_train_params(parser):
     parser.add_argument('--speed-threshold', type=float, default=15)
     parser.add_argument('--time-decay', type=float, default=0.97)
     parser.add_argument('--temperature', type=float, default=5.0)
-    parser.add_argument('--CEM', action='store_true', help='using CEM for action sample')
     parser.add_argument('--SAS', action='store_true', help="whether to enable sequential action sampling")
     parser.add_argument('--SAS_thred', type=int, default=5, help="number of action candidates remaining after the first stage of SAS")
 

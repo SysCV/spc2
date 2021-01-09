@@ -2,7 +2,7 @@ from __future__ import division, print_function
 from manager import BufferManager
 from actionsampler import ActionSampleManager
 from utils import generate_guide_grid, log_frame, record_screen, draw_from_pred, from_variable_to_numpy, monitor_guide, norm_image
-from models_dla import init_models
+from models import init_models
 import os
 import sys
 import cv2
@@ -11,7 +11,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 import multiprocessing as _mp
-from retinanet.encoder import DataEncoder
+from utils.dataset import DataEncoder
 mp = _mp.get_context('spawn')
 
 

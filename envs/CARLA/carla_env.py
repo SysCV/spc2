@@ -3,17 +3,16 @@ from __future__ import print_function, division
 import random
 import numpy as np
 
-from .carla.sensor import Camera
-from .carla.settings import CarlaSettings
-from .carla.image_converter import labels_to_array
-from .carla.transform import Transform
-from .carla.image_converter import depth_to_local_point_cloud, to_rgb_array, depth_to_logarithmic_grayscale, depth_to_array
+from .carla_lib.carla.sensor import Camera
+from .carla_lib.carla.settings import CarlaSettings
+from .carla_lib.carla.image_converter import labels_to_array
+from .carla_lib.carla.transform import Transform
+from .carla_lib.carla.image_converter import depth_to_local_point_cloud, to_rgb_array, depth_to_logarithmic_grayscale, depth_to_array
 import cv2
 import math
 import os
 import shutil
 from numpy.linalg import inv
-from skimage import measure
 import gc
 import time
 import random
@@ -91,7 +90,7 @@ class CarlaEnv(object):
 
         return throttle, steer, brake
 
-    def reset(self, testing=False, autopilot=False):
+    def reset(self, testing=False):
         # set the recording related variables
         self.episode += 1  
         self.testing = testing
@@ -111,22 +110,14 @@ class CarlaEnv(object):
         print('Starting new episode ...')
         self.client.start_episode(player_start)
         
-        # randomly send control signals to initialize booting the agent status
-        if not autopilot:
-            print("--- Initialize the agent status by random signals ---")
-            for _ in range(30):
-                self.client.send_control(
-                    steer=random.uniform(-1.0, 1.0),
-                    throttle=0.6,
-                    brake=0.0,
-                    hand_brake=False,
-                    reverse=False)
-            measurements, sensor_data = self.client.read_data()
-        else:
-            # ##### autopilot mode: do nothing to reset#####
-            measurements, sensor_data = self.client.read_data()
-            control = measurements.player_measurements.autopilot_control
-            self.client.send_control(control)
+        for _ in range(30):
+            self.client.send_control(
+                steer=0,
+                throttle=1.0,
+                brake=0.0,
+                hand_brake=False,
+                reverse=False)
+        measurements, sensor_data = self.client.read_data()
 
         # read the enviornments after initial control signals
         # measurements, sensor_data = self.client.read_data()
@@ -139,38 +130,25 @@ class CarlaEnv(object):
         info = self.insert_ins_info(measurements, info)
         self.record(obs, labels_to_segimage(info["seg"]), mon, info)
         
-        if autopilot:
-            return obs, info, control
-        else:
-            return obs, info
+        return obs, info
 
 
-    def step(self, action=None, expert=False, autopilot=False, rnd=0):
+    def step(self, action=None, expert=False, rnd=0):
         self.timestep += 1
-        assert((action is not None) or (autopilot))
 
-        if not autopilot:
-            if expert:
-                self.client.send_control(action)
-            else:
-                throttle, steer, brake = self.signal_mapping(action)
-                if abs(steer) < self.args.steer_clip:
-                    steer = 0
-                self.client.send_control(
-                    throttle=throttle,
-                    steer=steer,
-                    brake=brake,
-                    hand_brake=False,
-                    reverse=False)
-            measurements, sensor_data = self.client.read_data()
+        if expert:
+            self.client.send_control(action)
         else:
-            # control the agent with autopilot control signal
-            measurements, sensor_data = self.client.read_data()
-            control = measurements.player_measurements.autopilot_control
-            if rnd > 0:
-                control.steer += random.uniform(-rnd, rnd)
-                control.throttle += random.uniform(-rnd, rnd)
-            self.client.send_control(control)
+            throttle, steer, brake = self.signal_mapping(action)
+            if abs(steer) < self.args.steer_clip:
+                steer = 0
+            self.client.send_control(
+                throttle=throttle,
+                steer=steer,
+                brake=brake,
+                hand_brake=False,
+                reverse=False)
+        measurements, sensor_data = self.client.read_data()
 
         info = self.convert_info(measurements)
         sensor_dict = self.read_sensor(sensor_data)
@@ -187,10 +165,7 @@ class CarlaEnv(object):
             for subdir in ["mon", "seg", "obs"]: 
                 self.mm.merge(subdir, self.episode, self.timestep+1)
       
-        if autopilot:
-            return obs, info, done, control, reward
-        else:
-            return obs, reward, done, info
+        return obs, reward, done, info
 
     def get_bbox(self, measurement, seg, coll_veh_num):
         width = self.view_w
@@ -266,10 +241,19 @@ class CarlaEnv(object):
 
 
     def insert_ins_info(self, measurements, info):
-        info["bboxes"], info["distances"], info['coll_with'], info["3d_bboxes"], info["rotations"], info["dimensionses"], info["calib"] = \
+        if self.args.use_detection:
+            info["bboxes"], info["distances"], info['coll_with'], info["3d_bboxes"], info["rotations"], info["dimensionses"], info["calib"] = \
             self.get_bbox(measurements, info["seg"], info['coll_veh_num'])
-        info['orientations'] = info['rotations'] - self.rotation.yaw
-        # print(info['orientations'])
+            info['orientations'] = info['rotations'] - self.rotation.yaw
+        else:
+            info["bboxes"] = None 
+            info["distances"] = None
+            info['coll_with'] = None
+            info["3d_bboxes"] = None 
+            info["rotations"] = None 
+            info["dimensionses"] = None 
+            info["calib"] = None 
+            info['orientations'] = None
         
         return info
 
