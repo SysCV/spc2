@@ -15,7 +15,6 @@ from utils.eval_segm import mean_IU, mean_accuracy, pixel_accuracy, frequency_we
 import math
 import random
 import logging
-from matplotlib.patches import Wedge
 
 
 def get_guide_action(action, lb=-1.0, ub=1.0):
@@ -302,30 +301,37 @@ def make_dir(path):
 def load_model(args, path, net, resume=True):
     if resume:
         if args.checkpoint != "" and args.eval:
+            # evaluation mode, loading specified checkpoint
             model_path = args.checkpoint
             state_dict = torch.load(model_path)
             net.load_state_dict(state_dict)
             print("eval | loaded model: {}".format(args.checkpoint))
-            epoch = 0
+            epoch, step = 0
+        if args.checkpoint == "" and args.eval:
+            print("expected specifed checkpoint in eval mode!")
+            exit(0)
         else:
+            # training mode
             model_path = os.path.join(path, 'model')
             if os.path.isdir(model_path):
                 file_list = sorted(os.listdir(model_path))
             else:
                 os.makedirs(model_path)
                 file_list = []
+
             if len(file_list) == 0 and not args.eval:
                 print('No model to resume!')
                 model_path = args.pretrain_model
                 state_dict = torch.load(model_path)
                 print('turn to the base pretrain model: {}'.format(args.pretrain_model))
                 net.load_state_dict(state_dict)
-                epoch = 0
+                epoch, step = 0, 0
             else:
                 model_path = file_list[-1]
                 epoch = pkl.load(open(os.path.join(path, 'epoch.pkl'), 'rb'))
                 print('Loading model from', os.path.join(path, 'model', model_path))
                 state_dict = torch.load(os.path.join(path, 'model', model_path))
+                step = int(model_path.split("_")[-1].split(".")[0])
                 net.load_state_dict(state_dict)
     else:
         print('Start from scratch!')
@@ -333,10 +339,9 @@ def load_model(args, path, net, resume=True):
         state_dict = torch.load(model_path)
         print('turn to the base pretrain model: {}'.format(args.pretrain_model))
         net.load_state_dict(state_dict)
-        epoch = 0
-        epoch = 0
+        epoch, step = 0, 0 
 
-    return net, epoch
+    return net, epoch, step
 
 
 def from_variable_to_numpy(x):

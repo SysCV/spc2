@@ -19,7 +19,7 @@ from utils import monitor_guide
 # import pygame
 # from .bbox import ClientSideBoundingBoxes, crop_visible_bboxes
 from .carla_env import MonitorManager
-from .carla.image_converter import labels_to_array
+from .carla_lib.carla.image_converter import labels_to_array
 
 try:
     sys.path.append(glob.glob('**/carla-*%d.%d-%s.egg' % (

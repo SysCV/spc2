@@ -131,26 +131,6 @@ class FPN(nn.Module):
 
         return p3, p4, p5, p6, p7
 
-    '''
-    def forward(self, x):
-        # Bottom-up
-        c1 = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        c1 = F.max_pool2d(c1, kernel_size=3, stride=2, padding=1)
-        c2 = self.layer1(c1)
-        c3 = self.layer2(c2)
-        c4 = self.layer3(c3)
-        # c5 = self.layer4(c4)
-        p5 = self.conv50(c4)
-        p6 = self.conv60(F.relu(p5, inplace=True))
-        # Top-down
-        p4 = self.latlayer10(c4)
-        p3 = self._upsample_add(p4, self.latlayer20(c3))
-        p3 = self.toplayer1(p3)
-        p2 = self._upsample_add(p3, self.latlayer30(c2))
-        p2 = self.toplayer2(p2)
-        
-        return p2, p3, p4, p5, p6
-    '''
 
 def FPN50():
     return FPN(Bottleneck, [3,4,6,3])
@@ -245,4 +225,6 @@ class RetinaNet_Header(nn.Module):
         for layer in self.modules():
             if isinstance(layer, nn.BatchNorm2d):
                 layer.eval()
+
+
 

@@ -4,7 +4,7 @@ import os
 import random
 import torch
 from torch.autograd import Variable
-from retinanet.encoder import DataEncoder
+from utils.dataset import DataEncoder
 import gc
 import json
 from utils import norm_image
@@ -13,11 +13,9 @@ from utils import norm_image
 class SPCBuffer(object):
     def __init__(self, args):
         self.args = args
-
         self.next_idx = 0
         self.num_in_buffer = 0
         self.last_idx = 0
-
         self.obs = None
         self.action = None
         self.done = None
@@ -168,11 +166,8 @@ class SPCBuffer(object):
         return encoded_obs
 
     def store_frame(self, obs, collision, collision_other, collision_vehicles, coll_with, offroad, offlane, speed, seg, bboxes, depth):
-        # assert obs.shape == (self.args.frame_height, self.args.frame_width, 3)
-        # import pdb; pdb.set_trace()
         # as the convention in opencv, we operate and store image in CxHxW format        
         frame = obs.transpose(2, 0, 1)  # reshape as [C, H, W]
-        # seg = seg.transpose() # reshape as [H, W]
 
         if self.obs is None:
             self.obs = np.empty([self.args.buffer_size, 3, self.args.frame_height, self.args.frame_width], dtype=np.uint8)
@@ -205,11 +200,12 @@ class SPCBuffer(object):
         self.seg[self.next_idx, :] = seg
         self.depth[self.next_idx, :] = depth
 
-        labels = [0 for i in range(len(bboxes))] # curently we only detect the vehicles
-        self.bboxes[self.next_idx] = bboxes
-        # self.directions[self.next_idx] = directions
-        self.bboxes_cls[self.next_idx] = labels
-        self.colls_with[self.next_idx] = list(coll_with)
+        if self.args.use_detection:
+            labels = [0 for i in range(len(bboxes))] # curently we only detect the vehicles
+            self.bboxes[self.next_idx] = bboxes
+            # self.directions[self.next_idx] = directions
+            self.bboxes_cls[self.next_idx] = labels
+            self.colls_with[self.next_idx] = list(coll_with)
 
         self.last_idx = self.next_idx
         self.next_idx = (self.next_idx + 1) % self.args.buffer_size
