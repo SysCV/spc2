@@ -1,6 +1,6 @@
 # IPC: Instance-Aware Predictive Control
 
-This repo is for the paper [Instance-Aware Predictive Navigation in Multi-Agent Environments](). 
+This repo is for the paper [Instance-Aware Predictive Navigation in Multi-Agent Environments](https://arxiv.org/abs/2101.05893). 
 
 ## Overview
 
