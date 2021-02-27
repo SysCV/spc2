@@ -9,8 +9,10 @@ This repo is for the paper [Instance-Aware Predictive Navigation in Multi-Agent 
 **Instance-Aware Predictive Control (IPC)** is a predictive control model to gain driving policy in multi-agent driving environments. It follows a "forecasting + planning" philosophy to control the agent in three steps:
 
 1. sample action candidates, which is encouraged by a guidance network, imitating the agent's previoud good experience.
-2. use sampled action candidates and sensor observation to predict the action's consquences, namely future visual structure and probability of states of interest, such as agent speed and chance of collision etc.
+2. use sampled action candidates and sensor observation to predict the action's consquences, namely future visual structure and probability of states of interest, such a s agent speed and chance of collision etc.
 3. Use cost function to estimate the preference of different sampled action sequences. Only one sequence will be selected and its action on the current step will be executed.
+
+**Please see the explanation and demo video [here](https://drive.google.com/file/d/1FpuutMCMunenzes73j0uDlYVxsLRG1Oz/view?usp=sharing)**
 
 ## Usage
 
@@ -79,4 +81,12 @@ The evaluation result on GTA V is shown below.
 
 ## Citation
 
-The citation entry is coming soon.
+```
+@article{cao2021instance,
+  title={Instance-Aware Predictive Navigation in Multi-Agent Environments},
+  author={Cao, Jinkun and Wang, Xin and Darrell, Trevor and Yu, Fisher},
+  journal={arXiv preprint arXiv:2101.05893},
+  year={2021}
+}
+```
+
