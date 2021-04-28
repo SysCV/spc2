@@ -14,7 +14,7 @@ import math
 import random
 import time
 import torch
-from envs.CARLA.carla.client import make_carla_client
+from envs.CARLA.carla_lib.carla.client import make_carla_client
 from envs.CARLA.carla_env import CarlaEnv
 
 

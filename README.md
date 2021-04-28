@@ -18,7 +18,7 @@ This repo is for the paper [Instance-Aware Predictive Navigation in Multi-Agent 
 
 ### Training
 
-To train **IPC**, you need the collaboration of python programs and the simulator because it train fully online in the driving environment. 
+To train **IPC**, you need the collaboration of python programs and the simulator because it train fully online in the driving environment. Before training, you are expected to download [pretrained weights](https://drive.google.com/file/d/1DyO6EtsQ_lhDKOJSJVpi7XrWoVHD3xra/view?usp=sharing) and move it to **pretrain/** folder.
 
 #### Python-side
 

@@ -79,7 +79,7 @@ def set_train_params(parser):
 def set_model_params(parser):
     # set model configs
     # parser.add_argument('--detach-seg', action='store_true', help='detach the feature map for segmentation prediction')
-    parser.add_argument('--pretrain-model', type=str, default='pretrain/spc_p10.pth', help='the base pretrain model for initializing model')
+    parser.add_argument('--pretrain-model', type=str, default='pretrain/pretrained.pth', help='the base pretrain model for initializing model')
     parser.add_argument('--expert-bar', type=int, default=50)
     parser.add_argument('--expert-ratio', type=float, default=0.05)
     parser.add_argument('--bin-divide', type=list, default=[5, 5])
