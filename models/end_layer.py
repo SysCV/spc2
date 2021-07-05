@@ -14,9 +14,9 @@ class end_layer(nn.Module):
         self.conv4 = nn.Conv2d(64, 32, 1, stride=1, padding=0)
 
         self.flatten_len = int(32 * (self.args.frame_width / 128) * (self.args.frame_height / 128))
-        self.fc11 = nn.Linear(self.flatten_len, 128)
-        self.fc22 = nn.Linear(128, 32)
-        self.fc33 = nn.Linear(32, out_dim)
+        self.fc1 = nn.Linear(self.flatten_len, 128)
+        self.fc2 = nn.Linear(128, 32)
+        self.fc3 = nn.Linear(32, out_dim)
 
         self.apply(weights_init)
 

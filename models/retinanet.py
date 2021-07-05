@@ -175,6 +175,7 @@ class RetinaNet_Header(nn.Module):
         self.cls_head = self._make_head(self.num_anchors * self.num_classes)
         self.coll_head = self._make_head(self.num_anchors * 2) # coll / non-coll prob
         self.bins = 4
+        # We suggest to disable the 3D detection head for now because it's not mature enough
         self.thrd_head = Header3D(self.num_classes, self.bins, self.num_anchors)
 
     def forward(self, fms):

@@ -37,7 +37,8 @@ cd ..
 	--frame-height 256 \
 	--use-depth \
 	--resume \
-	--pretrain-model pretrain/model_only_fpn50.pth\
+	--pretrain-model pretrain/pretrained.pth\
+	# --use-detection \
 	# --steer-clip 0.1\
 	# --resume \
 	# --use-offlane \
