@@ -12,7 +12,7 @@ This repo is for the paper [Instance-Aware Predictive Navigation in Multi-Agent 
 2. use sampled action candidates and sensor observation to predict the action's consquences, namely future visual structure and probability of states of interest, such a s agent speed and chance of collision etc.
 3. Use cost function to estimate the preference of different sampled action sequences. Only one sequence will be selected and its action on the current step will be executed.
 
-**Please see the explanation and demo video [here](https://drive.google.com/file/d/1O7u_ifm0HZE1mBCEgnRW7aoyrX7WgEoZ/view?usp=sharing)**
+**Please see the explanation and demo video [here](https://www.youtube.com/watch?v=IWM2GueUcJE)**
 
 ## Usage
 
